@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.github import router as github_router
+from app.api.badge import router as badge_router
 
 app = FastAPI(
     title="GitHub README Generator",
@@ -17,6 +18,7 @@ app.add_middleware(
 )
 
 app.include_router(github_router)
+app.include_router(badge_router)
 
 @app.get("/")
 def root():
