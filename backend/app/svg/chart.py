@@ -71,7 +71,7 @@ def make_pie_chart(lang_ratio: dict[str, float], width: int = 340) -> str:
         f'fill="{THEME["card_bg"]}" stroke="{THEME["border"]}" stroke-width="1.5"/>',
         # 제목
         f'  <text x="18" y="24" font-family="Arial,sans-serif" font-size="12" '
-        f'fill="{THEME["title"]}" font-weight="bold">🗂 Languages</text>',
+        f'fill="{THEME["title"]}" font-weight="bold">🗂️ Languages</text>',
     ]
 
     # 파이 슬라이스
@@ -131,7 +131,7 @@ def make_bar_chart(lang_ratio: dict[str, float], width: int = 340) -> str:
         f'  <rect width="{width}" height="{height}" rx="10" '
         f'fill="{THEME["card_bg"]}" stroke="{THEME["border"]}" stroke-width="1.5"/>',
         f'  <text x="18" y="22" font-family="Arial,sans-serif" font-size="12" '
-        f'fill="{THEME["title"]}" font-weight="bold">🗂 Languages</text>',
+        f'fill="{THEME["title"]}" font-weight="bold">🗂️ Languages</text>',
     ]
 
     for i, (lang, pct) in enumerate(items):
