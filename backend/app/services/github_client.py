@@ -1,5 +1,6 @@
 import httpx
 from app.core.config import GITHUB_TOKEN, GITHUB_API_BASE
+from app.core.exceptions import GithubAPIError, UserNotFoundError
 
 HEADERS = {
     "Authorization": f"Bearer {GITHUB_TOKEN}",
@@ -8,35 +9,40 @@ HEADERS = {
 }
 
 
+def _handle_response(res: httpx.Response, username: str = "") -> dict | list:
+    if res.status_code == 404:
+        raise UserNotFoundError(username)
+    if res.status_code == 403:
+        raise GithubAPIError("GitHub API 요청 한도 초과. 잠시 후 다시 시도해주세요.", 429)
+    if res.status_code == 401:
+        raise GithubAPIError("GitHub Token이 유효하지 않습니다.", 401)
+    if not res.is_success:
+        raise GithubAPIError(f"GitHub API 오류 (HTTP {res.status_code})", res.status_code)
+    return res.json()
+
+
 async def get_user(username: str) -> dict:
-    """유저 기본 정보 조회"""
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=10.0) as client:
         res = await client.get(f"{GITHUB_API_BASE}/users/{username}", headers=HEADERS)
-        res.raise_for_status()
-        return res.json()
+        return _handle_response(res, username)
 
 
 async def get_repos(username: str) -> list:
-    """퍼블릭 레포 전체 조회 (최대 100개)"""
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=10.0) as client:
         res = await client.get(
             f"{GITHUB_API_BASE}/users/{username}/repos",
             headers=HEADERS,
             params={"per_page": 100, "sort": "updated"},
         )
-        res.raise_for_status()
-        return res.json()
+        return _handle_response(res, username)
 
 
 async def get_recent_commits(username: str, days: int = 30) -> list:
-    """최근 커밋 이벤트 조회"""
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=10.0) as client:
         res = await client.get(
             f"{GITHUB_API_BASE}/users/{username}/events/public",
             headers=HEADERS,
             params={"per_page": 100},
         )
-        res.raise_for_status()
-        events = res.json()
-        # PushEvent만 필터링
+        events = _handle_response(res, username)
         return [e for e in events if e.get("type") == "PushEvent"]
