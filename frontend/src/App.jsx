@@ -1,7 +1,11 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
+import Header          from "./components/Header";
+import Footer          from "./components/Footer";
+import StepIndicator   from "./components/StepIndicator";
 import UsernameForm    from "./components/UsernameForm";
 import OptionsPanel    from "./components/OptionsPanel";
 import UserCard        from "./components/UserCard";
+import SkeletonCard    from "./components/SkeletonCard";
 import GenerateButton  from "./components/GenerateButton";
 import ReadmePreview   from "./components/ReadmePreview";
 import { fetchUserData, generateReadme } from "./api";
@@ -23,6 +27,11 @@ export default function App() {
   const [fetchError,   setFetchError]   = useState("");
   const [genError,     setGenError]     = useState("");
   const [markdown,     setMarkdown]     = useState("");
+
+  const previewRef = useRef(null);
+
+  // 현재 스텝 계산
+  const currentStep = markdown ? 3 : profile ? 2 : 1;
 
   // 유저 데이터 불러오기
   const handleFetch = async (username) => {
@@ -52,6 +61,10 @@ export default function App() {
         username: profile.username,
       });
       setMarkdown(result.markdown);
+      // 생성 완료 후 미리보기로 자동 스크롤
+      setTimeout(() => {
+        previewRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
     } catch (e) {
       setGenError(e.message);
     } finally {
@@ -61,19 +74,10 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-pastel-50 py-10 px-4">
+      <div className="max-w-5xl mx-auto">
 
-      {/* 헤더 */}
-      <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold text-pastel-500">
-          🤖 GitHub 프로필 README 생성기
-        </h1>
-        <p className="text-sm text-gray-400 mt-1">
-          GitHub 활동 데이터로 예쁜 프로필 README를 자동 생성해드립니다
-        </p>
-      </div>
-
-      {/* 메인 레이아웃 — 2단 그리드 */}
-      <div className="max-w-5xl mx-auto space-y-5">
+        <Header />
+        <StepIndicator currentStep={currentStep} />
 
         {/* 상단: 입력 + 옵션 + 유저 카드 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -88,24 +92,23 @@ export default function App() {
           <div className="space-y-4">
             {fetchError && (
               <div className="bg-red-50 border border-red-200 text-red-500
-                              rounded-2xl px-5 py-4 text-sm">
+                              rounded-2xl px-5 py-4 text-sm fade-in">
                 ⚠️ {fetchError}
               </div>
             )}
-            {fetchLoading && (
-              <div className="bg-white border border-pastel-200 rounded-2xl
-                              px-5 py-10 text-center text-pastel-300 text-sm animate-pulse">
-                GitHub 데이터를 불러오는 중...
-              </div>
-            )}
+            {fetchLoading && <SkeletonCard />}
             {!fetchLoading && !fetchError && !profile && (
               <div className="bg-white border-2 border-dashed border-pastel-200
-                              rounded-2xl px-5 py-10 text-center text-gray-300 text-sm">
-                유저명을 입력하고 생성 버튼을 눌러주세요 🚀
+                              rounded-2xl px-5 py-16 text-center text-gray-300 text-sm">
+                <p className="text-4xl mb-3">🔍</p>
+                <p>유저명을 입력하고</p>
+                <p>생성 버튼을 눌러주세요</p>
               </div>
             )}
             {profile && (
-              <UserCard profile={profile} chartStyle={options.chart_style} />
+              <div className="fade-in">
+                <UserCard profile={profile} chartStyle={options.chart_style} />
+              </div>
             )}
           </div>
 
@@ -113,26 +116,34 @@ export default function App() {
 
         {/* README 생성 버튼 */}
         {profile && (
-          <GenerateButton
-            onClick={handleGenerate}
-            loading={genLoading}
-            disabled={!profile}
-          />
+          <div className="mt-5 fade-in">
+            <GenerateButton
+              onClick={handleGenerate}
+              loading={genLoading}
+              disabled={!profile}
+            />
+          </div>
         )}
 
-        {/* 에러 */}
+        {/* 생성 에러 */}
         {genError && (
-          <div className="bg-red-50 border border-red-200 text-red-500
-                          rounded-2xl px-5 py-4 text-sm">
+          <div className="mt-4 bg-red-50 border border-red-200 text-red-500
+                          rounded-2xl px-5 py-4 text-sm fade-in">
             ⚠️ {genError}
           </div>
         )}
 
-        {/* 하단: README 미리보기 */}
+        {/* README 미리보기 */}
         {markdown && (
-          <ReadmePreview markdown={markdown} username={profile?.username} />
+          <div ref={previewRef} className="mt-5 fade-in">
+            <h2 className="text-pastel-500 font-bold text-sm mb-3 px-1">
+              ✅ README 생성 완료! 아래에서 복사하거나 다운로드하세요.
+            </h2>
+            <ReadmePreview markdown={markdown} username={profile?.username} />
+          </div>
         )}
 
+        <Footer />
       </div>
     </div>
   );
